@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#9a7aa0" />
+  <title>练伴｜和朋友一起坚持</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow" id="todayText"></p>
+        <h1 id="pageTitle">早上好，林夏</h1>
+      </div>
+      <button class="avatar-button" data-action="go-profile" aria-label="打开个人中心">
+        <span>夏</span><i class="online-dot"></i>
+      </button>
+    </header>
+
+    <main id="app" class="page" aria-live="polite"></main>
+
+    <nav class="bottom-nav" aria-label="主导航">
+      <button class="nav-item active" data-page="home"><span class="nav-icon">⌂</span><span>首页</span></button>
+      <button class="nav-item" data-page="checkin"><span class="nav-icon">＋</span><span>打卡</span></button>
+      <button class="nav-item" data-page="plans"><span class="nav-icon">▣</span><span>计划</span></button>
+      <button class="nav-item" data-page="ranking"><span class="nav-icon">♕</span><span>排行</span></button>
+      <button class="nav-item" data-page="profile"><span class="nav-icon">○</span><span>我的</span></button>
+    </nav>
+  </div>
+
+  <div id="toast" class="toast" role="status"></div>
+  <div id="modalRoot"></div>
+  <script src="app.js"></script>
+</body>
+</html>
