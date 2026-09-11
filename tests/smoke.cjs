@@ -46,6 +46,12 @@ const server=http.createServer((req,res)=>{
     assert.match(await page.locator('#toast').innerText(),/每天只能保存一次/);
     await page.locator('.modal-close button').click();
     assert.match(await page.locator('.weight-latest').innerText(),/60 kg/);
+    await page.locator('.weight-history summary').click();
+    await page.locator('[data-action="edit-weight"]').click();
+    await page.locator('#weightForm [name="weight"]').fill('59.5');
+    await page.locator('#weightForm button').click(); await close();
+    assert.match(await page.locator('.weight-latest').innerText(),/59.5 kg/);
+    assert.equal(await page.locator('.chart-point').count(),1);
     console.log('PASS daily weight uniqueness and single-point boundary');
 
     await page.locator('.bottom-nav [data-page="plans"]').click();
@@ -55,6 +61,10 @@ const server=http.createServer((req,res)=>{
     await page.locator('#planForm [name="duration"]').fill('5');
     await page.locator('#planForm button').click(); await close();
     await page.locator('[data-plan-check]').check();
+    await page.locator('#checkinForm').waitFor();
+    await page.locator('#checkinForm [name="duration"]').fill('6');
+    await page.locator('#checkinForm > button').click(); await close();
+    await check(page.locator('[data-plan-check]').isChecked(),'linked training did not complete plan');
     await page.locator('[data-action="edit-plan"]').click();
     await page.locator('#planForm [name="duration"]').fill('8');
     await page.locator('#planForm button').click(); await close();
@@ -65,9 +75,38 @@ const server=http.createServer((req,res)=>{
     await page.reload(); await page.locator('.bottom-nav [data-page="plans"]').click();
     assert.equal(await page.locator('.plan-task').count(),2);
     await check(page.locator('[data-plan-check]').first().isChecked(),'reload lost task completion');
+    await page.locator('[data-action="edit-template"]').first().click();
+    await page.locator('#planForm [name="name"]').fill('我的肩背模板');
+    await page.locator('#planForm [name="duration"]').fill('18');
+    await page.locator('#planForm button').click(); await close();
+    assert.match(await page.locator('.template-card').first().innerText(),/我的肩背模板/);
+    assert.match(await page.locator('.plan-task').nth(1).innerText(),/35 分钟/);
+    await page.locator('[data-action="use-template"]').first().click(); await close();
+    assert.match(await page.locator('.plan-task').nth(2).innerText(),/18 分钟/);
+    // Horizontal swipe exposes delete; vertical scrolling must not expose it.
+    const swipe=page.locator('.swipe-row').nth(2), box=await swipe.boundingBox();
+    await page.mouse.move(box.x+100,box.y+25);await page.mouse.down();await page.mouse.move(box.x+185,box.y+26,{steps:8});await page.mouse.up();
+    await check(swipe.evaluate(el=>el.classList.contains('revealed')),'right swipe failed');
+    await page.waitForTimeout(450);
+    await swipe.locator('.swipe-delete').click();
+    await page.locator('.confirm-actions [data-action="close-modal"]').click();
+    assert.equal(await page.locator('.plan-task').count(),3);
+    await swipe.locator('.swipe-delete').click();await page.locator('[data-action="confirm"]').click();
+    assert.equal(await page.locator('.plan-task').count(),2);
+    // Removing the plan from home retains its saved workout, as the dialog says.
+    await page.locator('.bottom-nav [data-page="home"]').click();
+    await page.locator('[data-action="reveal-delete"]').first().click();
+    await page.locator('.swipe-delete').first().click();await page.locator('[data-action="confirm"]').click();
+    assert.equal(await page.locator('[data-action="edit-record"]').count(),1);
+    await page.locator('[data-action="delete-record"]').click();await page.locator('[data-action="confirm"]').click();await close();
+    await page.locator('.bottom-nav [data-page="profile"]').click();
+    assert.equal(await page.locator('.metric-row strong').nth(1).innerText(),'0');
+    await page.locator('.bottom-nav [data-page="plans"]').click();
+    await page.screenshot({path:path.join(output,'plans-updated.png'),fullPage:true});
     await page.locator('[data-kind="plan"][data-delta="-1"]').click();
     assert.equal(await page.locator('.plan-task').count(),0);
     console.log('PASS plan creation/edit/completion/date isolation/reload');
+    console.log('PASS template isolation, plan-to-record flow, right swipe, safe deletion and score recalculation');
 
     await page.locator('.bottom-nav [data-page="diet"]').click();
     assert.equal(await page.locator('.bottom-nav [data-page="ranking"]').count(),0);
