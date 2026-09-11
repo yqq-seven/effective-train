@@ -215,6 +215,48 @@ p { line-height: 1.55; }
 .confirm-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
 .confirm-actions .primary-btn { margin-top: 0; }
 .danger-btn { background: #ae6373 !important; }
+.profile-link { width:100%; display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding:17px; background:var(--surface); border:1px solid var(--line); border-radius:18px; color:var(--primary-dark); text-align:left; }
+.profile-link span:last-child { font-size:12px; color:var(--muted); }
+.day-picker { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px; background:var(--surface); border:1px solid var(--line); border-radius:17px; margin:16px 0; }
+.day-picker button { width:38px; height:38px; border:0; border-radius:11px; background:var(--surface-2); color:var(--primary-dark); font-size:23px; }
+.day-picker button:disabled { opacity:.3; }
+.day-picker label { display:flex; align-items:center; gap:8px; min-width:0; font-size:12px; }
+.day-picker input { max-width:140px; min-width:0; padding:5px; border:0; background:transparent; color:var(--primary-dark); }
+.plan-subtitle { margin-bottom:15px; }
+.plan-checklist { padding:16px; border:1px solid var(--line); background:var(--surface); border-radius:24px; }
+.plan-task { display:flex; align-items:flex-start; gap:8px; margin-top:12px; padding:15px 12px; border-radius:16px; background:#eee6ef; }
+.plan-task.is-done { background:#e6ece2; }
+.task-check { display:flex; align-items:flex-start; gap:10px; flex:1; min-width:0; cursor:pointer; }
+.task-check input { accent-color:#829977; width:20px; height:20px; flex:0 0 20px; margin:0; }
+.task-content { display:grid; gap:6px; overflow-wrap:anywhere; }
+.task-content strong { font-size:13px; font-weight:500; }
+.task-content strong small { font-size:11px; }
+.task-content>span { font-size:11px; line-height:1.6; color:var(--muted); }
+.is-done .task-content strong { text-decoration:line-through; color:#7d8d75; }
+.task-edit { border:0; background:transparent; color:var(--primary); font-size:11px; padding:2px; min-height:28px; }
+.diet-summary { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.diet-summary>div { display:grid; justify-items:center; gap:6px; background:var(--surface); border:1px solid var(--line); border-radius:17px; padding:16px 5px; }
+.diet-summary strong { font-size:20px; }
+.diet-summary span { font-size:10px; color:var(--muted); }
+.diet-heading h2 { font-size:15px; }
+.meal-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.meal-card { position:relative; border:1px solid var(--line); background:var(--surface); border-radius:18px; overflow:hidden; align-self:start; }
+.meal-open { display:block; width:100%; padding:0; border:0; background:transparent; text-align:left; cursor:pointer; }
+.meal-photo { aspect-ratio:1/1; position:relative; background:#ece5eb; display:grid; place-items:center; }
+.meal-photo img { width:100%; height:100%; object-fit:cover; position:absolute; }
+.meal-placeholder { font-size:40px; color:#b5a5b4; display:grid; justify-items:center; gap:6px; }
+.meal-placeholder small { font-size:10px; }
+.meal-badge { position:absolute; right:8px; top:8px; padding:4px 7px; border-radius:8px; color:white; background:#8f708fe6; font-size:10px; }
+.meal-info { padding:11px 10px 5px; }
+.meal-info h3 { font-size:13px; overflow-wrap:anywhere; }
+.meal-info p { display:flex; flex-wrap:wrap; gap:5px; font-size:10px; color:var(--muted); margin:6px 0; }
+.meal-info p span { color:var(--primary-dark); }
+.meal-info .meal-note { display:block; overflow-wrap:anywhere; }
+.meal-delete { border:0; background:transparent; color:#a67583; font-size:10px; padding:8px 10px; }
+.meal-image-preview img { width:100%; max-height:180px; object-fit:cover; border-radius:15px; }
+button { cursor:pointer; }
+button:disabled { cursor:default; }
+:focus-visible { outline:2px solid var(--primary); outline-offset:3px; }
 .empty { text-align: center; color: var(--muted); padding: 30px 15px; background: var(--surface); border-radius: var(--radius); }
 .toast { position: fixed; z-index: 99; left: 50%; bottom: 100px; transform: translate(-50%, 18px); padding: 11px 16px; background: #3d343d; color: white; border-radius: 13px; font-size: 13px; opacity: 0; pointer-events: none; transition: .25s; white-space: nowrap; }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
