@@ -149,6 +149,45 @@ p { line-height: 1.55; }
 .friend-row { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 17px; padding: 11px; }
 .friend-row .friend-meta strong { font-size: 13px; }
 .friend-row button { border: 0; color: var(--primary); background: var(--surface-2); border-radius: 11px; padding: 8px 10px; font-size: 11px; }
+.login-mode .topbar, .login-mode .bottom-nav { display: none; }
+.login-mode .page { padding: 0; min-height: 100dvh; }
+.login-screen { min-height: 100dvh; display: grid; align-content: center; padding: 40px 24px; background: radial-gradient(circle at 85% 15%, #eadbe6 0, transparent 32%), linear-gradient(160deg,#fbf8fa,#f2eaf0); }
+.brand-mark { width: 66px; height: 66px; display: grid; place-items: center; border-radius: 24px; color: white; background: linear-gradient(135deg,var(--primary),var(--pink)); font-size: 27px; font-weight: 700; box-shadow: var(--shadow); margin-bottom: 18px; }
+.login-screen h1 { font-size: 28px; margin: 0; }
+.login-tip { color: var(--muted); margin: 8px 0 26px; }
+.login-card { display: grid; gap: 15px; }
+.header-avatar { position: absolute; inset: 0; border-radius: inherit; background-size: cover; background-position: center; }
+.avatar-image { background-size: cover !important; background-position: center !important; background-color: var(--pink-soft) !important; }
+.profile-copy { flex: 1; min-width: 0; }
+.profile-main .secondary-btn { padding: 9px 12px; font-size: 11px; }
+.record-date, .subtle { margin: 3px 0 0; color: var(--muted); font-size: 11px; }
+.field-help { color: var(--muted); font-size: 10px; margin-top: -2px; }
+.hidden-field { display: none; }
+.report-pill { background: var(--surface-2); color: var(--primary); }
+.report-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 17px; box-shadow: var(--shadow); }
+.report-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.report-head div { display: grid; gap: 3px; }
+.report-head span { color: var(--muted); font-size: 11px; }
+.report-head input { border: 1px solid var(--line); border-radius: 12px; padding: 9px; color: var(--primary-dark); background: var(--bg); }
+.calendar-strip { display: flex; gap: 7px; overflow-x: auto; padding: 16px 0; scrollbar-width: none; }
+.calendar-strip button { min-width: 54px; border: 1px solid var(--line); border-radius: 13px; padding: 8px 5px; display: grid; gap: 3px; background: white; color: var(--muted); }
+.calendar-strip button.active { background: var(--primary); color: white; border-color: var(--primary); }
+.calendar-strip i { font-style: normal; font-size: 10px; }
+.report-total { display: flex; align-items: center; justify-content: space-between; padding: 13px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.report-total span { color: var(--muted); font-size: 12px; }
+.drill-list details { border-bottom: 1px solid var(--line); padding: 13px 0; }
+.drill-list details:last-child { border-bottom: 0; }
+.drill-list summary { display: flex; justify-content: space-between; cursor: pointer; font-size: 13px; }
+.drill-row { display: grid; grid-template-columns: 48px 1fr 34px; gap: 8px; align-items: center; padding-top: 11px; font-size: 11px; color: var(--muted); }
+.report-bar { height: 9px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
+.report-bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg,var(--pink),var(--primary)); }
+.report-empty { margin-top: 8px; }
+.stat-card small { font-size: 11px; }
+.rule-copy { font-size: 12px; color: var(--muted); line-height: 2; }
+.logout-btn { width: 100%; margin-top: 26px; border: 0; background: transparent; color: #aa6f7d; padding: 14px; }
+.modal-close { display: flex; justify-content: flex-end; }
+.modal-form { margin-top: 12px; display: grid; gap: 14px; }
+.avatar-editor { display: flex; align-items: center; gap: 14px; }
 .empty { text-align: center; color: var(--muted); padding: 30px 15px; background: var(--surface); border-radius: var(--radius); }
 .toast { position: fixed; z-index: 99; left: 50%; bottom: 100px; transform: translate(-50%, 18px); padding: 11px 16px; background: #3d343d; color: white; border-radius: 13px; font-size: 13px; opacity: 0; pointer-events: none; transition: .25s; white-space: nowrap; }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
