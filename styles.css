@@ -104,6 +104,9 @@ p { line-height: 1.55; }
 .field label { color: var(--muted); font-size: 12px; }
 .field input, .field select, .field textarea { width: 100%; border: 1px solid var(--line); border-radius: 14px; padding: 12px; background: #fbf9fa; color: var(--ink); outline: none; }
 .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--primary-light); box-shadow: 0 0 0 3px rgba(143,112,143,.1); }
+.select-wrap { position: relative; }
+.select-wrap::after { content: "⌄"; position: absolute; right: 14px; top: 50%; transform: translateY(-55%); color: var(--primary); pointer-events: none; font-size: 18px; }
+.select-wrap select { appearance: none; padding-right: 42px; background: linear-gradient(180deg,#fff,#faf7f9); font-weight: 600; }
 .field textarea { resize: vertical; min-height: 76px; }
 .upload-box { position: relative; border: 1.5px dashed var(--primary-light); border-radius: 16px; min-height: 104px; display: grid; place-items: center; color: var(--primary); background: #faf6f9; overflow: hidden; }
 .upload-box input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
@@ -161,18 +164,26 @@ p { line-height: 1.55; }
 .profile-copy { flex: 1; min-width: 0; }
 .profile-main .secondary-btn { padding: 9px 12px; font-size: 11px; }
 .record-date, .subtle { margin: 3px 0 0; color: var(--muted); font-size: 11px; }
+.record-actions { display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--line); margin-top: 13px; padding-top: 10px; }
+.record-actions button { border: 0; border-radius: 10px; padding: 7px 12px; background: var(--surface-2); color: var(--primary-dark); font-size: 11px; }
+.record-actions .danger-text { color: #ae6373; background: #f7e9ed; }
 .field-help { color: var(--muted); font-size: 10px; margin-top: -2px; }
 .hidden-field { display: none; }
 .report-pill { background: var(--surface-2); color: var(--primary); }
 .report-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 17px; box-shadow: var(--shadow); }
-.report-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-.report-head div { display: grid; gap: 3px; }
-.report-head span { color: var(--muted); font-size: 11px; }
-.report-head input { border: 1px solid var(--line); border-radius: 12px; padding: 9px; color: var(--primary-dark); background: var(--bg); }
-.calendar-strip { display: flex; gap: 7px; overflow-x: auto; padding: 16px 0; scrollbar-width: none; }
-.calendar-strip button { min-width: 54px; border: 1px solid var(--line); border-radius: 13px; padding: 8px 5px; display: grid; gap: 3px; background: white; color: var(--muted); }
-.calendar-strip button.active { background: var(--primary); color: white; border-color: var(--primary); }
-.calendar-strip i { font-style: normal; font-size: 10px; }
+.month-nav { display: grid; grid-template-columns: 40px 1fr 40px; align-items: center; text-align: center; }
+.month-nav button { width: 36px; height: 36px; border: 0; border-radius: 12px; background: var(--surface-2); color: var(--primary); font-size: 23px; }
+.month-nav button:disabled { opacity: .3; }
+.month-summary { display: flex; justify-content: space-between; align-items: center; margin: 14px 0; padding: 11px 13px; border-radius: 13px; background: var(--surface-2); font-size: 12px; }
+.calendar-week, .month-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 5px; }
+.calendar-week { color: var(--muted); font-size: 10px; text-align: center; padding-bottom: 7px; }
+.month-grid { margin-bottom: 14px; }
+.calendar-day { min-width: 0; height: 43px; border: 0; border-radius: 11px; display: grid; place-items: center; align-content: center; gap: 1px; background: transparent; color: var(--muted); font-size: 11px; }
+.calendar-day i { min-height: 10px; font-style: normal; font-size: 8px; color: var(--sage); }
+.calendar-day.has-data { background: #f2eaf0; color: var(--primary-dark); font-weight: 700; }
+.calendar-day.active { background: var(--primary); color: white; }
+.calendar-day.active i { color: white; }
+.selected-day { color: var(--muted); font-size: 11px; padding: 11px 0 4px; border-top: 1px solid var(--line); }
 .report-total { display: flex; align-items: center; justify-content: space-between; padding: 13px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
 .report-total span { color: var(--muted); font-size: 12px; }
 .drill-list details { border-bottom: 1px solid var(--line); padding: 13px 0; }
@@ -188,6 +199,22 @@ p { line-height: 1.55; }
 .modal-close { display: flex; justify-content: flex-end; }
 .modal-form { margin-top: 12px; display: grid; gap: 14px; }
 .avatar-editor { display: flex; align-items: center; gap: 14px; }
+.weight-latest { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.weight-latest span { color: var(--muted); font-size: 11px; }
+.weight-svg-wrap { overflow-x: auto; }
+.weight-svg { width: 100%; min-width: 300px; height: 165px; overflow: visible; }
+.chart-axis { stroke: var(--line); stroke-width: 1; }
+.chart-line { fill: none; stroke: var(--primary); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.chart-point { fill: white; stroke: var(--primary); stroke-width: 3; }
+.chart-value { fill: var(--primary-dark); font-size: 9px; }
+.chart-date { fill: var(--muted); font-size: 8px; }
+.notice-modal { text-align: center; padding: 8px 5px 4px; }
+.notice-modal p { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
+.notice-icon { width: 54px; height: 54px; margin: 0 auto 14px; display: grid; place-items: center; border-radius: 20px; color: white; background: var(--sage); font-size: 24px; font-weight: 700; }
+.notice-icon.warn { background: #cf929f; }
+.confirm-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+.confirm-actions .primary-btn { margin-top: 0; }
+.danger-btn { background: #ae6373 !important; }
 .empty { text-align: center; color: var(--muted); padding: 30px 15px; background: var(--surface); border-radius: var(--radius); }
 .toast { position: fixed; z-index: 99; left: 50%; bottom: 100px; transform: translate(-50%, 18px); padding: 11px 16px; background: #3d343d; color: white; border-radius: 13px; font-size: 13px; opacity: 0; pointer-events: none; transition: .25s; white-space: nowrap; }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }

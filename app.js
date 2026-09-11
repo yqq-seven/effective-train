@@ -13,7 +13,10 @@ let activeUsername = sessionStorage.getItem('lianban-user') || '';
 let state = activeUsername ? loadState(activeUsername) : null;
 let currentPage = 'home';
 let reportDate = today;
+let reportMonth = today.slice(0, 7);
 let uploadedPhoto = '';
+let editingCheckinId = null;
+let confirmHandler = null;
 
 function freshState(username) {
   return {
@@ -49,6 +52,7 @@ function handleClick(e) {
   if (action === 'go-checkin') navigate('checkin');
   if (action === 'go-profile') navigate('profile');
   if (action === 'close-modal') closeModal();
+  if (action === 'confirm') { const fn = confirmHandler; closeModal(); if (fn) fn(); }
   if (action === 'logout') logout();
   if (action === 'edit-profile') showProfileEditor();
   if (action === 'weight') showWeightModal();
@@ -56,6 +60,9 @@ function handleClick(e) {
   if (action === 'use-template') useTemplate(el.dataset.name, el.dataset.type, el.dataset.detail, Number(el.dataset.duration));
   if (action === 'nudge') toast(`已提醒 ${el.dataset.name} 来打卡`);
   if (action === 'report-day') { reportDate = el.dataset.date; render(); }
+  if (action === 'report-month') changeReportMonth(Number(el.dataset.delta));
+  if (action === 'edit-record') startEditRecord(Number(el.dataset.id));
+  if (action === 'delete-record') confirmDeleteRecord(Number(el.dataset.id));
 }
 
 function handleSubmit(e) {
@@ -70,7 +77,7 @@ function handleSubmit(e) {
 
 function handleChange(e) {
   if (e.target.id === 'type') updateActionOptions(e.target.value);
-  if (e.target.id === 'reportDate') { reportDate = e.target.value; render(); }
+  if (e.target.id === 'reportDate') { reportDate = e.target.value; reportMonth = reportDate.slice(0, 7); render(); }
   if (e.target.id === 'photo' || e.target.id === 'avatarFile') {
     const file = e.target.files?.[0]; if (!file) return;
     const reader = new FileReader();
@@ -105,6 +112,7 @@ function renderApp() {
 }
 function navigate(page, scroll = true) {
   currentPage = page;
+  if (page !== 'checkin') editingCheckinId = null;
   const titles = { home: hasToday() ? `今天也很棒，${state.user.name}` : `你好，${state.user.name}`, checkin:'记录今日训练', plans:'我的训练计划', ranking:'好友排行榜', profile:'个人中心' };
   document.querySelector('#pageTitle').textContent = titles[page];
   document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.page === page));
@@ -123,18 +131,22 @@ function homeView() {
   <section class="section"><div class="section-head"><h2>最近记录</h2><button data-page="profile">查看报表</button></div>${state.checkins.length ? `<div class="feed-list">${state.checkins.slice(0,3).map(recordCard).join('')}</div>` : '<div class="empty">还没有训练记录<br><small>完成第一次打卡后会显示在这里</small></div>'}</section>`;
 }
 function planCard(plan) { return `<article class="plan-card"><div class="plan-icon">${plan.type === '有氧' ? '🏃' : '🏋️'}</div><div class="plan-content"><div class="row-between"><h3>${esc(plan.name)}</h3><strong>${plan.duration || 0}′</strong></div><p>${esc(plan.detail)}</p><div class="progress"><i style="width:${plan.progress || 0}%"></i></div></div></article>`; }
-function recordCard(c) { return `<article class="feed-card"><div class="row-between"><div><h3>${c.type} · ${c.exercise}</h3><p class="record-date">${c.date}${c.date === today ? ' · 今天' : ''}</p></div><span class="tag">${c.duration} 分钟</span></div><div class="feed-stats"><span class="mini-chip">${c.sets ? `${c.sets} 组 × ${c.reps || '-'} 次` : '持续训练'}</span><span class="mini-chip">${c.calories || 0} 千卡</span></div>${c.note ? `<p class="feed-text">${esc(c.note)}</p>` : ''}</article>`; }
+function recordCard(c) { return `<article class="feed-card"><div class="row-between"><div><h3>${c.type} · ${c.exercise}</h3><p class="record-date">${c.date}${c.date === today ? ' · 今天' : ''}</p></div><span class="tag">${c.duration} 分钟</span></div><div class="feed-stats"><span class="mini-chip">${c.sets ? `${c.sets} 组 × ${c.reps || '-'} 次` : '持续训练'}</span><span class="mini-chip">${c.calories || 0} 千卡</span></div>${c.note ? `<p class="feed-text">${esc(c.note)}</p>` : ''}<div class="record-actions"><button data-action="edit-record" data-id="${c.createdAt}">编辑</button><button class="danger-text" data-action="delete-record" data-id="${c.createdAt}">删除</button></div></article>`; }
 
 function checkinView() {
-  return `<div class="date-mode"><button class="active">今日打卡</button><button type="button" onclick="document.querySelector('#checkDate').focus()">历史补签</button></div><form id="checkinForm" class="form-card"><div class="form-grid">
-    <div class="field full"><label>训练日期</label><input id="checkDate" name="date" type="date" max="${today}" value="${today}" required></div>
-    <div class="field full"><label>运动类型</label><select id="type" name="type" required><option value="无氧">无氧</option><option value="有氧">有氧</option></select></div>
-    <div class="field full"><label>训练动作</label><select id="exercise" name="exercise" required>${actionsByType['无氧'].map(x => `<option>${x}</option>`).join('')}</select><small class="field-help">动作会根据运动类型自动切换</small></div>
-    <div class="field strength-field"><label>组数</label><input name="sets" type="number" min="1" placeholder="3"></div><div class="field strength-field"><label>每组次数</label><input name="reps" type="number" min="1" placeholder="12"></div>
-    <div class="field"><label>时长（分钟）</label><input name="duration" type="number" min="1" placeholder="30" required></div><div class="field"><label>消耗（千卡）</label><input name="calories" type="number" min="0" placeholder="180"></div>
+  const editing = state.checkins.find(c => c.createdAt === editingCheckinId);
+  const value = (key, fallback = '') => esc(editing?.[key] ?? fallback);
+  const type = editing?.type || '无氧';
+  return `<div class="date-mode"><button class="active">${editing ? '编辑记录' : '今日打卡'}</button><button type="button" onclick="document.querySelector('#checkDate').focus()">历史补签</button></div><form id="checkinForm" class="form-card"><div class="form-grid">
+    <input name="recordId" type="hidden" value="${editingCheckinId || ''}">
+    <div class="field full"><label>训练日期</label><input id="checkDate" name="date" type="date" max="${today}" value="${value('date', today)}" required></div>
+    <div class="field full"><label>运动类型</label><div class="select-wrap"><select id="type" name="type" required><option value="无氧" ${type==='无氧'?'selected':''}>无氧</option><option value="有氧" ${type==='有氧'?'selected':''}>有氧</option></select></div></div>
+    <div class="field full"><label>训练动作</label><div class="select-wrap"><select id="exercise" name="exercise" required>${actionsByType[type].map(x => `<option ${editing?.exercise===x?'selected':''}>${x}</option>`).join('')}</select></div><small class="field-help">动作会根据运动类型自动切换</small></div>
+    <div class="field strength-field ${type==='有氧'?'hidden-field':''}"><label>组数</label><input name="sets" type="number" min="1" placeholder="3" value="${value('sets')}"></div><div class="field strength-field ${type==='有氧'?'hidden-field':''}"><label>每组次数</label><input name="reps" type="number" min="1" placeholder="12" value="${value('reps')}"></div>
+    <div class="field"><label>时长（分钟）</label><input name="duration" type="number" min="1" placeholder="30" value="${value('duration')}" required></div><div class="field"><label>消耗（千卡）</label><input name="calories" type="number" min="0" placeholder="180" value="${value('calories')}"></div>
     <div class="field full"><label>训练照片（可选）</label><div class="upload-box" id="photoPreview"><span>＋ 添加训练照片</span><input id="photo" type="file" accept="image/*"></div></div>
-    <div class="field full"><label>备注</label><textarea name="note" placeholder="记录今天的状态或小突破…"></textarea></div><div class="field full"><label>谁可以看</label><select name="visibility"><option value="public">好友可见</option><option value="private">仅自己可见</option></select></div>
-  </div><button class="primary-btn solid">完成打卡 · +10 积分</button></form>`;
+    <div class="field full"><label>备注</label><textarea name="note" placeholder="记录今天的状态或小突破…">${value('note')}</textarea></div><div class="field full"><label>谁可以看</label><div class="select-wrap"><select name="visibility"><option value="public" ${editing?.visibility!=='private'?'selected':''}>好友可见</option><option value="private" ${editing?.visibility==='private'?'selected':''}>仅自己可见</option></select></div></div>
+  </div><button class="primary-btn solid">${editing ? '保存修改' : '完成打卡 · +10 积分'}</button></form>`;
 }
 function updateActionOptions(type) {
   document.querySelector('#exercise').innerHTML = actionsByType[type].map(x => `<option>${x}</option>`).join('');
@@ -160,39 +172,56 @@ function profileView() {
   const calories = state.checkins.reduce((n,c) => n + Number(c.calories || 0), 0);
   return `<section class="profile-card"><div class="profile-main">${avatarHTML(state.user, 'profile-big-avatar')}<div class="profile-copy"><h2>${esc(state.user.name)}</h2><p>@${state.user.username} · 和朋友一起坚持运动</p></div><button class="secondary-btn" data-action="edit-profile">编辑</button></div><div class="metric-row"><div><strong>${state.user.streak}</strong><span>连续天数</span></div><div><strong>${state.user.score}</strong><span>综合积分</span></div><div><strong>${state.friends.length}</strong><span>练伴好友</span></div></div></section>
   <section class="section"><div class="section-head"><h2>训练统计报表</h2><span>按日期下钻</span></div>${reportView()}</section>
+  <section class="section"><div class="section-head"><h2>全部训练记录</h2><span>${state.checkins.length} 条</span></div>${state.checkins.length ? `<div class="feed-list">${state.checkins.map(recordCard).join('')}</div>` : '<div class="empty">暂无训练记录</div>'}</section>
   <section class="section"><div class="section-head"><h2>累计数据</h2></div><div class="stats-grid"><div class="stat-card"><span>训练时长</span><strong>${minutes}<small> 分钟</small></strong></div><div class="stat-card"><span>消耗热量</span><strong>${calories}<small> 千卡</small></strong></div></div></section>
-  <section class="section"><div class="section-head"><h2>体重记录</h2><button data-action="weight">＋ 记录体重</button></div><div class="profile-card">${state.weights.length ? `<div class="row-between"><span class="subtle">最近一次</span><strong>${state.weights.at(-1).value} kg</strong></div>` : '<div class="empty">暂无体重记录</div>'}</div></section>
+  <section class="section"><div class="section-head"><h2>体重趋势</h2><button data-action="weight">＋ 记录体重</button></div><div class="profile-card">${weightChart()}</div></section>
   <button class="logout-btn" data-action="logout">退出当前账号</button>`;
 }
 function reportView() {
-  const dates = [...new Set(state.checkins.map(c => c.date))].sort().reverse();
-  if (!dates.includes(reportDate) && dates.length) reportDate = dates[0];
+  const [year, month] = reportMonth.split('-').map(Number);
+  const days = new Date(year, month, 0).getDate();
+  const leading = new Date(year, month - 1, 1).getDay();
+  if (!reportDate.startsWith(reportMonth)) reportDate = `${reportMonth}-01`;
   const items = state.checkins.filter(c => c.date === reportDate);
+  const monthItems = state.checkins.filter(c => c.date.startsWith(reportMonth));
   const grouped = {};
   items.forEach(c => { grouped[c.type] ||= {}; grouped[c.type][c.exercise] = (grouped[c.type][c.exercise] || 0) + Number(c.duration); });
   const total = items.reduce((n,c) => n + Number(c.duration), 0);
-  const dayOptions = dates.length ? dates : [today];
-  return `<div class="report-card"><div class="report-head"><div><span>选择日期</span><strong>${reportDate}</strong></div><input id="reportDate" type="date" max="${today}" value="${reportDate}"></div><div class="calendar-strip">${dayOptions.slice(0,7).map(d => `<button data-action="report-day" data-date="${d}" class="${d===reportDate?'active':''}"><span>${d.slice(5)}</span><i>${state.checkins.filter(c=>c.date===d).reduce((n,c)=>n+Number(c.duration),0)}′</i></button>`).join('')}</div>${total ? `<div class="report-total"><span>当日总时长</span><strong>${total} 分钟</strong></div><div class="drill-list">${Object.entries(grouped).map(([type, actions]) => { const typeTotal=Object.values(actions).reduce((a,b)=>a+b,0); return `<details open><summary><span>${type === '有氧' ? '🏃' : '🏋️'} ${type}</span><strong>${typeTotal} 分钟</strong></summary>${Object.entries(actions).map(([name,value]) => `<div class="drill-row"><span>${name}</span><div class="report-bar"><i style="width:${Math.max(8,value/total*100)}%"></i></div><strong>${value}′</strong></div>`).join('')}</details>`; }).join('')}</div>` : '<div class="empty report-empty">该日期暂无训练数据<br><small>完成打卡后即可查看分类报表</small></div>'}</div>`;
+  const monthMinutes = monthItems.reduce((n,c)=>n+Number(c.duration),0);
+  const cells = Array(leading).fill('<span class="calendar-blank"></span>').concat(Array.from({length:days},(_,i)=>{ const day=String(i+1).padStart(2,'0'), date=`${reportMonth}-${day}`, mins=state.checkins.filter(c=>c.date===date).reduce((n,c)=>n+Number(c.duration),0); return `<button data-action="report-day" data-date="${date}" class="calendar-day ${date===reportDate?'active':''} ${mins?'has-data':''}"><span>${i+1}</span>${mins?`<i>${mins}′</i>`:'<i></i>'}</button>`; }));
+  return `<div class="report-card"><div class="month-nav"><button data-action="report-month" data-delta="-1">‹</button><strong>${year} 年 ${month} 月</strong><button data-action="report-month" data-delta="1" ${reportMonth>=today.slice(0,7)?'disabled':''}>›</button></div><div class="month-summary"><span>本月累计</span><strong>${monthMinutes} 分钟</strong></div><div class="calendar-week"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div><div class="month-grid">${cells.join('')}</div><div class="selected-day"><span>${reportDate} 训练明细</span></div>${total ? `<div class="report-total"><span>当日总时长</span><strong>${total} 分钟</strong></div><div class="drill-list">${Object.entries(grouped).map(([type, actions]) => { const typeTotal=Object.values(actions).reduce((a,b)=>a+b,0); return `<details open><summary><span>${type === '有氧' ? '🏃' : '🏋️'} ${type}</span><strong>${typeTotal} 分钟</strong></summary>${Object.entries(actions).map(([name,value]) => `<div class="drill-row"><span>${name}</span><div class="report-bar"><i style="width:${Math.max(8,value/total*100)}%"></i></div><strong>${value}′</strong></div>`).join('')}</details>`; }).join('')}</div>` : '<div class="empty report-empty">这一天还没有训练记录</div>'}</div>`;
 }
+
+function changeReportMonth(delta) { const [y,m]=reportMonth.split('-').map(Number), d=new Date(y,m-1+delta,1); reportMonth=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; reportDate=`${reportMonth}-01`; render(); }
 
 function submitCheckin(data) {
   const item = Object.fromEntries(data.entries());
-  item.duration = Number(item.duration); item.calories = Number(item.calories || 0); item.createdAt = Date.now(); item.photo = uploadedPhoto;
+  const recordId = Number(item.recordId); delete item.recordId;
+  item.duration = Number(item.duration); item.calories = Number(item.calories || 0); item.createdAt = recordId || Date.now(); item.photo = uploadedPhoto || state.checkins.find(c=>c.createdAt===recordId)?.photo || '';
   if (item.type === '有氧') { item.sets = ''; item.reps = ''; }
+  if (recordId) {
+    const index = state.checkins.findIndex(c=>c.createdAt===recordId); if (index >= 0) state.checkins[index] = item;
+    state.user.streak = calculateStreak(state.checkins); save(); uploadedPhoto=''; editingCheckinId=null; reportDate=item.date; reportMonth=item.date.slice(0,7); navigate('home'); showNotice('修改已保存', '训练记录已经成功更新。'); return;
+  }
   const backfill = item.date !== today;
   state.checkins.unshift(item); state.user.score += backfill ? 5 : 10;
   if (!backfill && state.activePlan.type === item.type) { state.activePlan.progress = 100; state.user.score += 5; }
   state.user.streak = calculateStreak(state.checkins);
-  save(); uploadedPhoto = ''; reportDate = item.date; toast(backfill ? '补签成功，获得 5 积分' : '打卡成功，做得真棒！'); navigate('home');
+  save(); uploadedPhoto = ''; reportDate = item.date; reportMonth=item.date.slice(0,7); navigate('home'); showNotice(backfill ? '补签成功' : '打卡成功', backfill ? '历史记录已保存，获得 5 积分。' : '训练记录已保存，做得真棒！');
 }
+function startEditRecord(id) { editingCheckinId=id; currentPage='checkin'; document.querySelector('#pageTitle').textContent='编辑训练记录'; document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.page==='checkin')); render(); window.scrollTo({top:0,behavior:'smooth'}); }
+function confirmDeleteRecord(id) { showConfirm('删除这条记录？', '删除后无法恢复，相关统计也会同步更新。', () => { state.checkins=state.checkins.filter(c=>c.createdAt!==id); state.user.streak=calculateStreak(state.checkins); save(); render(); showNotice('记录已删除','训练数据和统计报表已更新。'); }); }
 function calculateStreak(items) { const unique = new Set(items.map(i=>i.date)); let d=new Date(), n=0; while(unique.has(d.toISOString().slice(0,10))){ n++; d.setDate(d.getDate()-1); } return n; }
-function useTemplate(name,type,detail,duration) { state.activePlan={name,type,detail,duration,progress:0}; save(); toast('已设为今日训练计划'); render(); }
+function useTemplate(name,type,detail,duration) { state.activePlan={name,type,detail,duration,progress:0}; save(); render(); showNotice('计划已保存', `${name} 已设为当前训练计划。`); }
 function showProfileEditor() { openModal(`<h2>编辑个人资料</h2><form id="profileForm" class="form-card modal-form"><div class="avatar-editor"><div id="avatarPreview" class="profile-big-avatar avatar-image" style="${state.user.avatar?`background-image:url('${state.user.avatar}')`:''}">${state.user.avatar?'':esc(state.user.name[0])}</div><label class="secondary-btn">更换头像<input id="avatarFile" type="file" accept="image/*" hidden></label><input id="avatarData" name="avatar" type="hidden" value="${state.user.avatar || ''}"></div><div class="field"><label>显示用户名</label><input name="name" maxlength="12" value="${esc(state.user.name)}" required></div><p class="field-help">登录账号 @${state.user.username} 不会改变</p><button class="primary-btn solid">保存资料</button></form>`); }
-function updateProfile(data) { state.user.name=data.get('name').trim(); state.user.avatar=data.get('avatar'); save(); closeModal(); renderApp(); toast('个人资料已更新'); }
-function showWeightModal() { openModal(`<h2>记录体重</h2><form id="weightForm" class="form-card modal-form"><div class="field"><label>当前体重（kg）</label><input name="weight" type="number" min="20" max="300" step="0.1" required></div><button class="primary-btn solid">保存记录</button></form>`); }
-function updateWeight(data) { state.weights.push({date:today,value:Number(data.get('weight'))}); save(); closeModal(); toast('体重记录已保存'); render(); }
+function updateProfile(data) { state.user.name=data.get('name').trim(); state.user.avatar=data.get('avatar'); save(); closeModal(); renderApp(); showNotice('资料已保存','用户名和头像已经更新。'); }
+function showWeightModal() { openModal(`<h2>记录体重</h2><form id="weightForm" class="form-card modal-form"><div class="field"><label>记录日期</label><input name="date" type="date" max="${today}" value="${today}" required></div><div class="field"><label>体重（kg）</label><input name="weight" type="number" min="20" max="300" step="0.1" required></div><button class="primary-btn solid">保存记录</button></form>`); }
+function updateWeight(data) { const date=data.get('date'), value=Number(data.get('weight')), existing=state.weights.findIndex(w=>typeof w==='object'&&w.date===date); if(existing>=0) state.weights[existing]={date,value}; else state.weights.push({date,value}); state.weights.sort((a,b)=>(a.date||'').localeCompare(b.date||'')); save(); closeModal(); render(); showNotice(existing>=0?'体重已更新':'体重已保存',`${date} 的体重记录为 ${value} kg。`); }
+function weightChart() { const points=state.weights.filter(w=>typeof w==='object').slice(-10); if(!points.length) return '<div class="empty">暂无体重记录<br><small>记录后将自动生成趋势折线图</small></div>'; const values=points.map(p=>p.value), min=Math.min(...values)-.5, max=Math.max(...values)+.5, width=320, height=150, pad=24, x=i=>points.length===1?width/2:pad+i*(width-pad*2)/(points.length-1), y=v=>pad+(max-v)/(max-min)*(height-pad*2); const line=points.map((p,i)=>`${x(i)},${y(p.value)}`).join(' '); return `<div class="weight-latest"><span>最新 ${points.at(-1).date}</span><strong>${points.at(-1).value} kg</strong></div><div class="weight-svg-wrap"><svg class="weight-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="体重变化折线图"><line x1="${pad}" y1="${height-pad}" x2="${width-pad}" y2="${height-pad}" class="chart-axis"/><polyline points="${line}" class="chart-line"/>${points.map((p,i)=>`<circle cx="${x(i)}" cy="${y(p.value)}" r="4" class="chart-point"/><text x="${x(i)}" y="${y(p.value)-9}" text-anchor="middle" class="chart-value">${p.value}</text><text x="${x(i)}" y="${height-5}" text-anchor="middle" class="chart-date">${p.date.slice(5)}</text>`).join('')}</svg></div>`; }
 function showPlanModal() { openModal(`<h2>自定义训练计划</h2><form id="planForm" class="form-card modal-form"><div class="field"><label>计划名称</label><input name="name" required></div><div class="field"><label>类型</label><select name="type"><option>无氧</option><option>有氧</option></select></div><div class="field"><label>训练内容</label><input name="detail" required></div><div class="field"><label>预计时长（分钟）</label><input name="duration" type="number" min="1" required></div><button class="primary-btn solid">保存计划</button></form>`); }
-function updatePlan(data) { state.activePlan={...Object.fromEntries(data.entries()),duration:Number(data.get('duration')),progress:0}; save(); closeModal(); toast('训练计划已保存'); render(); }
+function updatePlan(data) { state.activePlan={...Object.fromEntries(data.entries()),duration:Number(data.get('duration')),progress:0}; save(); closeModal(); render(); showNotice('计划已保存','新的训练计划已设为当前计划。'); }
+function showNotice(title, message) { openModal(`<div class="notice-modal"><div class="notice-icon">✓</div><h2>${title}</h2><p>${message}</p><button class="primary-btn solid" data-action="close-modal">知道了</button></div>`); }
+function showConfirm(title,message,onConfirm) { confirmHandler=onConfirm; openModal(`<div class="notice-modal"><div class="notice-icon warn">!</div><h2>${title}</h2><p>${message}</p><div class="confirm-actions"><button class="secondary-btn" data-action="close-modal">取消</button><button class="primary-btn solid danger-btn" data-action="confirm">确认删除</button></div></div>`); }
 function openModal(content) { document.querySelector('#modalRoot').innerHTML=`<div class="modal-backdrop"><div class="modal"><div class="modal-handle"></div><div class="modal-close"><button class="icon-btn" data-action="close-modal">×</button></div>${content}</div></div>`; }
 function closeModal() { document.querySelector('#modalRoot').innerHTML=''; }
 
